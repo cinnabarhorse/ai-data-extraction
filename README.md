@@ -24,7 +24,9 @@ Extracts from Claude Code / Claude Desktop
 Extracts from Codex (if installed)
 - **Searches**: `~/.codex`, `~/.codex-local`
 - **Formats**: Rollout JSONL files
-- **Includes**: User/agent messages, tool results, diffs
+- **Includes**: User/agent messages, response phases, lineage, tool calls/results, diffs
+- **Handles**: Legacy `event_msg` and current `response_item` rollout schemas
+- **Excludes**: Private model reasoning records
 
 ### 3. `extract_cursor.py`
 Extracts from Cursor (Chat + Composer + Agent) - ALL VERSIONS
@@ -110,6 +112,12 @@ python3 extract_cursor.py
 
 # Extract from Codex
 python3 extract_codex.py
+
+# Compact human-readable export without automation heartbeat turns
+python3 extract_codex.py --exclude-heartbeats --messages-only
+
+# Full modern tool extraction without automation heartbeat turns
+python3 extract_codex.py --exclude-heartbeats
 
 # Extract from Trae
 python3 extract_trae.py
@@ -205,8 +213,17 @@ Each script follows this pattern:
 
 #### Claude Code / Codex
 - **Format**: JSONL files (one event per line)
-- **Location**: `~/.claude/projects/[project]/[session].jsonl`
+- **Locations**: `~/.claude/projects/[project]/[session].jsonl` and
+  `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`
 - **Structure**: Event-based with type markers
+
+Current Codex rollouts store messages and tool activity primarily as
+`response_item` records. The extractor reconciles those records with visible
+`event_msg` messages, keeps the first metadata record as the unique rollout
+identity, and records fork lineage separately. Pass `--exclude-heartbeats` to
+remove an automation heartbeat prompt together with every assistant message and
+tool event from that turn. Pass `--messages-only` when tool outputs would make a
+local export unnecessarily large.
 
 #### Cursor (v0.43 - v2.0+)
 - **Format**: SQLite databases
